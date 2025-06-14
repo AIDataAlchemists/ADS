@@ -10,8 +10,11 @@ from typing import Dict, Any, Optional, List, Union
 from enum import Enum
 import yaml
 import structlog
-from pydantic import BaseSettings, Field, validator, SecretStr
-from pydantic_settings import SettingsConfigDict
+
+# Fix Pydantic v2 imports
+from pydantic import BaseModel, Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic.types import SecretStr
 
 # Setup structured logging with colorama
 import colorama
@@ -207,14 +210,16 @@ class Settings(BaseSettings):
     CUSTOM_WORKFLOW_CONFIGS: Dict[str, Any] = Field(default_factory=dict, description="Custom workflow configurations")
     CUSTOM_TOOL_CONFIGS: Dict[str, Any] = Field(default_factory=dict, description="Custom tool configurations")
     
-    @validator("STORAGE_PATH", "MEMORY_PATH", "MODELS_PATH", "LOGS_PATH", "DATA_PATH", "REPORTS_PATH")
+    @field_validator("STORAGE_PATH", "MEMORY_PATH", "MODELS_PATH", "LOGS_PATH", "DATA_PATH", "REPORTS_PATH")
+    @classmethod
     def create_directories(cls, v):
         """Ensure directories exist"""
         path = Path(v)
         path.mkdir(parents=True, exist_ok=True)
         return path
     
-    @validator("LOG_LEVEL")
+    @field_validator("LOG_LEVEL")
+    @classmethod
     def validate_log_level(cls, v):
         """Validate log level"""
         if isinstance(v, str):
