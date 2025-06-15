@@ -10,11 +10,8 @@ from typing import Dict, Any, Optional, List, Union
 from enum import Enum
 import yaml
 import structlog
-
-# Fix Pydantic v2 imports
-from pydantic import BaseModel, Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic.types import SecretStr
+from pydantic import BaseSettings, Field, validator, SecretStr
+from pydantic_settings import SettingsConfigDict
 
 # Setup structured logging with colorama
 import colorama
@@ -210,16 +207,14 @@ class Settings(BaseSettings):
     CUSTOM_WORKFLOW_CONFIGS: Dict[str, Any] = Field(default_factory=dict, description="Custom workflow configurations")
     CUSTOM_TOOL_CONFIGS: Dict[str, Any] = Field(default_factory=dict, description="Custom tool configurations")
     
-    @field_validator("STORAGE_PATH", "MEMORY_PATH", "MODELS_PATH", "LOGS_PATH", "DATA_PATH", "REPORTS_PATH")
-    @classmethod
+    @validator("STORAGE_PATH", "MEMORY_PATH", "MODELS_PATH", "LOGS_PATH", "DATA_PATH", "REPORTS_PATH")
     def create_directories(cls, v):
         """Ensure directories exist"""
         path = Path(v)
         path.mkdir(parents=True, exist_ok=True)
         return path
     
-    @field_validator("LOG_LEVEL")
-    @classmethod
+    @validator("LOG_LEVEL")
     def validate_log_level(cls, v):
         """Validate log level"""
         if isinstance(v, str):
@@ -342,12 +337,6 @@ class Settings(BaseSettings):
                 wrapper_class=structlog.stdlib.BoundLogger,
                 cache_logger_on_first_use=True,
             )
-    
-    class Config:
-        """Pydantic configuration"""
-        case_sensitive = True
-        env_file = ".env"
-        env_file_encoding = "utf-8"
 
 def load_custom_configs() -> Dict[str, Any]:
     """Load custom configurations from YAML files"""
